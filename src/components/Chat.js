@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { auth, database } from "../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 
@@ -8,6 +8,7 @@ function Chat() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef(null);
 
   console.log(selectedUser);
 
@@ -86,8 +87,16 @@ function Chat() {
     }
   }, [user, selectedUser]);
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, selectedUser]);
+
   const getChatId = (uid1, uid2) => {
     return uid1 < uid2 ? `${uid1}-${uid2}` : `${uid2}-${uid1}`;
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSend = (e) => {
@@ -182,7 +191,7 @@ function Chat() {
         <div style={{ paddingLeft: "15px" }}>
           <h3>{selectedUser ? selectedUser.email : "Select a user"}</h3>
         </div>
-        {selectedUser && (
+        {selectedUser ? (
           <>
             <div className="messages">
               {filteredMessages.map((message) => (
@@ -212,6 +221,7 @@ function Chat() {
                   )}
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
             <form onSubmit={handleSend}>
               <input
@@ -223,6 +233,17 @@ function Chat() {
               <button type="submit">Send</button>
             </form>
           </>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100%",
+            }}
+          >
+            Select a user to start chatting
+          </div>
         )}
       </div>
     </div>
