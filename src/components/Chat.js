@@ -4,7 +4,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 
 function Chat() {
   const [user] = useAuthState(auth);
-  const [activeUsers, setActiveUsers] = useState([]);
+  const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -15,14 +15,14 @@ function Chat() {
   useEffect(() => {
     const usersRef = database.ref("users");
     usersRef.on("value", (snapshot) => {
-      const users = [];
+      const userList = [];
       snapshot.forEach((childSnapshot) => {
         const userData = childSnapshot.val();
-        if (userData.online && userData.email !== user.email) {
-          users.push({ ...userData, uid: childSnapshot.key });
+        if (userData.email !== user.email) {
+          userList.push({ ...userData, uid: childSnapshot.key });
         }
       });
-      setActiveUsers(users);
+      setUsers(userList);
     });
 
     return () => usersRef.off();
@@ -147,27 +147,29 @@ function Chat() {
     <div className="chat">
       <div className="user-list">
         <div>
-          <h3>Active Users</h3>
+          <h3>Users</h3>
           <ul
             style={{
               listStyleType: "none",
               padding: 0,
             }}
           >
-            {activeUsers.map((activeUser) => (
+            {users.map((user) => (
               <li
-                key={activeUser.uid}
-                onClick={() => setSelectedUser(activeUser)}
-                style={{
-                  cursor: "pointer",
-                  padding: "10px",
-                  backgroundColor:
-                    selectedUser && selectedUser.uid === activeUser.uid
-                      ? "#f0f0f0"
-                      : "white",
-                }}
+                key={user.uid}
+                onClick={() => setSelectedUser(user)}
+                className={
+                  selectedUser && selectedUser.uid === user.uid
+                    ? "selected"
+                    : ""
+                }
               >
-                {activeUser.email}
+                <span
+                  className={`status-indicator ${
+                    user.online ? "online" : "offline"
+                  }`}
+                ></span>
+                {user.email}
               </li>
             ))}
           </ul>
