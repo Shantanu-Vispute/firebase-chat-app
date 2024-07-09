@@ -59,6 +59,22 @@ function Chat() {
                 })
               );
               allMessages = [...allMessages, ...chatMessages];
+
+              // Update status for received messages
+              chatMessages.forEach((message) => {
+                if (message.sender !== user.uid) {
+                  if (message.status === "sent") {
+                    updateMessageStatus(message, "delivered");
+                  }
+                  if (
+                    message.status === "delivered" &&
+                    selectedUser &&
+                    selectedUser.uid === otherUserId
+                  ) {
+                    updateMessageStatus(message, "read");
+                  }
+                }
+              });
             }
           });
           allMessages.sort((a, b) => a.timestamp - b.timestamp);
@@ -68,7 +84,7 @@ function Chat() {
 
       return () => userChatsRef.off();
     }
-  }, [user]);
+  }, [user, selectedUser]);
 
   const getChatId = (uid1, uid2) => {
     return uid1 < uid2 ? `${uid1}-${uid2}` : `${uid2}-${uid1}`;
@@ -79,11 +95,18 @@ function Chat() {
     if (newMessage.trim() && selectedUser) {
       const chatId = getChatId(user.uid, selectedUser.uid);
       const newMessageRef = database.ref(`chats/${chatId}`).push();
-      newMessageRef.set({
+      const messageData = {
         sender: user.uid,
         text: newMessage.trim(),
         timestamp: Date.now(),
         status: "sent",
+      };
+      newMessageRef.set(messageData).then(() => {
+        // Update the status to 'delivered' immediately after sending
+        updateMessageStatus(
+          { ...messageData, key: newMessageRef.key },
+          "delivered"
+        );
       });
       setNewMessage("");
     }
@@ -101,7 +124,7 @@ function Chat() {
       case "delivered":
         return "✓✓";
       case "read":
-        return "✓✓";
+        return "✓✓✓";
       default:
         return "";
     }
@@ -170,7 +193,23 @@ function Chat() {
                   }`}
                 >
                   <div>{message.text}</div>
-                  <div className="status">{getStatusIcon(message.status)}</div>
+
+                  {/* message time  */}
+                  <div
+                    style={{
+                      fontSize: "0.7rem",
+                      textAlign: "right",
+                      marginRight: "10px",
+                    }}
+                  >
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                  </div>
+
+                  {message.sender === user.uid && (
+                    <div className="status">
+                      {getStatusIcon(message.status)}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
