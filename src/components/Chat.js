@@ -43,6 +43,8 @@ function Chat() {
 
   useEffect(() => {
     if (user) {
+      const userStatusRef = database.ref(`users/${user.uid}`);
+
       const userChatsRef = database.ref("chats");
       userChatsRef.on("value", (snapshot) => {
         const chats = snapshot.val();
@@ -83,7 +85,26 @@ function Chat() {
         }
       });
 
-      return () => userChatsRef.off();
+      // Set user as online when they log in
+      const setOnlineStatus = () => {
+        userStatusRef.set({
+          email: user.email,
+          online: true,
+        });
+      };
+
+      // Set up a disconnect hook to mark user as offline when they disconnect
+      const setOfflineStatus = () => {
+        userStatusRef.onDisconnect().update({ online: false });
+      };
+
+      setOnlineStatus();
+      setOfflineStatus();
+
+      return () => {
+        userStatusRef.off();
+        userStatusRef.onDisconnect().cancel();
+      };
     }
   }, [user, selectedUser]);
 
